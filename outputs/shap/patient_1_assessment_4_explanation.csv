@@ -1,0 +1,11 @@
+Feature,Feature_Value,SHAP_Value,Absolute_SHAP,Direction,Rank
+GeneticRisk,2.0,0.8917526048860941,0.8917526048860941,Increases predicted risk,1
+CancerHistory,1.0,0.6935632605346584,0.6935632605346584,Increases predicted risk,2
+Risk_Factor_Count,5.0,0.6446258416254832,0.6446258416254832,Increases predicted risk,3
+PhysicalActivity,1.0,0.5569534399944285,0.5569534399944285,Increases predicted risk,4
+Gender,1.0,0.5469583341934271,0.5469583341934271,Increases predicted risk,5
+AlcoholIntake,4.0,0.4539973923850084,0.4539973923850084,Increases predicted risk,6
+Age,61.0,0.3948906610507386,0.3948906610507386,Increases predicted risk,7
+Smoking,1.0,0.31091932093994046,0.31091932093994046,Increases predicted risk,8
+BMI_Category,3.0,0.2887699215943518,0.2887699215943518,Increases predicted risk,9
+BMI,32.0,0.24835533355002068,0.24835533355002068,Increases predicted risk,10

@@ -1,0 +1,23 @@
+ONCOGUARD AI — MODEL EXPLANATION
+
+This explanation describes which input features contributed most to the model's prediction.
+These contributions describe model behavior and should not be interpreted as causal evidence or a medical diagnosis.
+
+Factors contributing toward a higher predicted risk:
+- gender (value: 1.0) was an important positive contributor to the model's prediction.
+- age (value: 61.0) was an important positive contributor to the model's prediction.
+- age group (value: 3.0) was an important positive contributor to the model's prediction.
+
+Factors contributing toward a lower predicted risk:
+- overall risk-factor count (value: 1.0) contributed toward a lower model prediction.
+- alcohol intake (value: 1.9704182425501595) contributed toward a lower model prediction.
+- cancer history (value: 0.0) contributed toward a lower model prediction.
+- BMI category (value: 1.0) contributed toward a lower model prediction.
+- genetic risk (value: 1.0) contributed toward a lower model prediction.
+
+Most influential features for this prediction:
+- gender
+- age
+- overall risk-factor count
+
+Important: A feature's contribution indicates how the trained model used that feature for this prediction. It does not establish that the feature caused cancer or that changing the feature will produce a particular change in risk.

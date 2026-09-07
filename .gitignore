@@ -1,0 +1,10 @@
+﻿.venv/
+__pycache__/
+*.pyc
+.env
+*.db
+data/*.db
+.streamlit/secrets.toml
+.vscode/
+.idea/
+catboost_info/

@@ -1,0 +1,6 @@
+{
+    "model": "CatBoost Calibrated",
+    "threshold_selection_method": "Maximum F1 on validation set",
+    "decision_threshold": 0.3899999999999999,
+    "validation_roc_auc": 0.942907444668008
+}

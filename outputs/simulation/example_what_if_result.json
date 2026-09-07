@@ -1,0 +1,13 @@
+{
+    "current_probability": 0.03082795677227392,
+    "hypothetical_probability": 0.06346740383315533,
+    "difference": 0.03263944706088141,
+    "current_percentage": 3.082795677227392,
+    "hypothetical_percentage": 6.346740383315533,
+    "difference_percentage_points": 3.2639447060881412,
+    "current_category": "Lower predicted risk",
+    "hypothetical_category": "Lower predicted risk",
+    "changes": {
+        "Smoking": 1
+    }
+}

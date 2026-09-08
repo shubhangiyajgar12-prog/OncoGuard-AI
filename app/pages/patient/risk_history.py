@@ -1,9 +1,9 @@
 import sys
 from pathlib import Path
 
-# ================================================================
+# ============================================================
 # PROJECT ROOT
-# ================================================================
+# ============================================================
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
@@ -11,15 +11,16 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 
-# ================================================================
+# ============================================================
 # IMPORTS
-# ================================================================
+# ============================================================
 
 import streamlit as st
 import pandas as pd
-import plotly.express as px
+import plotly.graph_objects as go
 
 from database.connection import SessionLocal
+
 from services.risk_history_service import (
     get_current_risk,
     get_risk_history,
@@ -28,12 +29,372 @@ from services.risk_history_service import (
 )
 
 
-# ================================================================
+# ============================================================
+# PAGE CONFIG
+# ============================================================
+
+st.set_page_config(
+    page_title="Risk Journey | OncoGuard AI",
+    page_icon="🛡️",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
+
+
+# ============================================================
+# GLOBAL CSS
+# ============================================================
+
+st.markdown(
+    """
+    <style>
+    .stApp {
+        background: #f5f7fb;
+    }
+
+    .main .block-container {
+        max-width: 1450px;
+        padding: 35px 45px 60px 45px;
+    }
+
+    #MainMenu {
+        visibility: hidden;
+    }
+
+    footer {
+        visibility: hidden;
+    }
+
+    header {
+        background: transparent !important;
+    }
+
+    /* Global text */
+    h1, h2, h3, h4, h5, h6 {
+        color: #172033 !important;
+    }
+
+    p, label, .stMarkdown {
+        color: #5f6b7d !important;
+    }
+
+    /* Sidebar */
+    section[data-testid="stSidebar"] {
+        background: #ffffff !important;
+        border-right: 1px solid #e6eaf0;
+    }
+
+    section[data-testid="stSidebar"] * {
+        color: #263248 !important;
+    }
+
+    /* Sidebar number input */
+    section[data-testid="stSidebar"] input {
+        color: #20283a !important;
+        background: #ffffff !important;
+    }
+
+    /* Page title */
+    .page-kicker {
+        color: #5b5ce2 !important;
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 2px;
+        margin-bottom: 8px;
+    }
+
+    .page-title {
+        color: #172033 !important;
+        font-size: 38px;
+        font-weight: 800;
+        line-height: 1.1;
+        margin-bottom: 8px;
+    }
+
+    .page-subtitle {
+        color: #788398 !important;
+        font-size: 15px;
+        margin-bottom: 28px;
+    }
+
+    /* Notice */
+    .notice {
+        background: #eef2ff;
+        border: 1px solid #dce3ff;
+        border-radius: 14px;
+        padding: 15px 18px;
+        color: #56627a !important;
+        font-size: 13px;
+        line-height: 1.55;
+        margin-bottom: 28px;
+    }
+
+    .notice strong {
+        color: #4947ba !important;
+    }
+
+    /* Section heading */
+    .section-title {
+        color: #20283a !important;
+        font-size: 20px;
+        font-weight: 750;
+        margin-top: 25px;
+        margin-bottom: 15px;
+    }
+
+    .section-caption {
+        color: #8b95a7 !important;
+        font-size: 12px;
+        margin-bottom: 12px;
+    }
+
+    /* Cards */
+    .card {
+        background: #ffffff;
+        border: 1px solid #e6eaf0;
+        border-radius: 18px;
+        padding: 22px;
+        box-shadow: 0 5px 18px rgba(30, 41, 59, 0.04);
+        min-height: 145px;
+    }
+
+    .card-label {
+        color: #7c8798 !important;
+        font-size: 11px;
+        font-weight: 750;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        margin-bottom: 12px;
+    }
+
+    .card-value {
+        color: #182033 !important;
+        font-size: 30px;
+        font-weight: 800;
+        line-height: 1.2;
+    }
+
+    .card-description {
+        color: #8993a5 !important;
+        font-size: 12px;
+        margin-top: 9px;
+        line-height: 1.5;
+    }
+
+    .risk-low {
+        color: #168866 !important;
+    }
+
+    .risk-medium {
+        color: #bd7d0f !important;
+    }
+
+    .risk-high {
+        color: #d4495b !important;
+    }
+
+    /* Status pills */
+    .pill {
+        display: inline-block;
+        padding: 6px 11px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 750;
+        margin-top: 10px;
+    }
+
+    .pill-low {
+        background: #e7f8f0;
+        color: #16845f !important;
+    }
+
+    .pill-medium {
+        background: #fff5dc;
+        color: #a8730d !important;
+    }
+
+    .pill-high {
+        background: #fdebed;
+        color: #c43e50 !important;
+    }
+
+    .pill-neutral {
+        background: #eef1f5;
+        color: #697487 !important;
+    }
+
+    /* Detail card */
+    .detail-card {
+        background: #ffffff;
+        border: 1px solid #e6eaf0;
+        border-radius: 18px;
+        padding: 22px;
+        box-shadow: 0 5px 18px rgba(30, 41, 59, 0.04);
+    }
+
+    .detail-label {
+        color: #7c8798 !important;
+        font-size: 11px;
+        font-weight: 750;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        margin-bottom: 14px;
+    }
+
+    .detail-main {
+        color: #20283a !important;
+        font-size: 25px;
+        font-weight: 800;
+        margin-bottom: 12px;
+    }
+
+    .detail-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 15px;
+        padding: 10px 0;
+        border-bottom: 1px solid #eef1f5;
+        font-size: 13px;
+    }
+
+    .detail-row:last-child {
+        border-bottom: none;
+    }
+
+    .detail-row span {
+        color: #687487 !important;
+    }
+
+    .detail-row strong {
+        color: #20283a !important;
+        text-align: right;
+    }
+
+    /* Trend information */
+    .trend-increasing {
+        background: #fff1f3;
+        border: 1px solid #f2d9dd;
+        color: #a04753 !important;
+    }
+
+    .trend-decreasing {
+        background: #edf9f4;
+        border: 1px solid #d4eee3;
+        color: #28765c !important;
+    }
+
+    .trend-stable {
+        background: #f0f3f7;
+        border: 1px solid #e0e5eb;
+        color: #657082 !important;
+    }
+
+    .trend-box {
+        padding: 14px 17px;
+        border-radius: 13px;
+        margin: 18px 0;
+        font-size: 13px;
+    }
+
+    /* Table */
+    [data-testid="stDataFrame"] {
+        border: 1px solid #e6eaf0;
+        border-radius: 14px;
+        overflow: hidden;
+    }
+
+    /* Disclaimer */
+    .disclaimer {
+        background: #ffffff;
+        border: 1px solid #e6eaf0;
+        border-radius: 14px;
+        padding: 16px 18px;
+        color: #737e90 !important;
+        font-size: 12px;
+        line-height: 1.6;
+        margin-top: 28px;
+    }
+
+    .disclaimer strong {
+        color: #4c5668 !important;
+    }
+
+    /* Sidebar brand */
+    .brand-name {
+        color: #20283a !important;
+        font-size: 22px;
+        font-weight: 800;
+    }
+
+    .brand-subtitle {
+        color: #8b95a7 !important;
+        font-size: 12px;
+        margin-top: 3px;
+        margin-bottom: 25px;
+    }
+
+    .side-heading {
+        color: #9aa3b2 !important;
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+        margin: 15px 0 8px 0;
+    }
+
+    .side-item {
+        color: #596579 !important;
+        font-size: 13px;
+        font-weight: 550;
+        padding: 10px 12px;
+        border-radius: 10px;
+        margin: 3px 0;
+    }
+
+    .side-active {
+        background: #eef0ff;
+        color: #5148d9 !important;
+        font-weight: 750;
+    }
+
+    .side-divider {
+        height: 1px;
+        background: #edf0f5;
+        margin: 18px 0;
+    }
+
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
+
+# ============================================================
 # HELPER FUNCTIONS
-# ================================================================
+# ============================================================
+
+def get_value(item, *keys, default=None):
+
+    if item is None:
+        return default
+
+    if isinstance(item, dict):
+
+        for key in keys:
+            if key in item:
+                return item[key]
+
+        return default
+
+    for key in keys:
+
+        if hasattr(item, key):
+            return getattr(item, key)
+
+    return default
+
 
 def format_timestamp(timestamp):
-    """Safely format a timestamp."""
 
     if timestamp is None:
         return "N/A"
@@ -44,8 +405,28 @@ def format_timestamp(timestamp):
     return str(timestamp)
 
 
+def risk_percentage(item):
+
+    value = get_value(
+        item,
+        "risk_percentage",
+        default=None,
+    )
+
+    if value is not None:
+        return float(value)
+
+    probability = get_value(
+        item,
+        "probability",
+        "risk_probability",
+        default=0,
+    )
+
+    return float(probability) * 100
+
+
 def display_band(band):
-    """Convert stored risk-band values into patient-friendly labels."""
 
     if not band:
         return "N/A"
@@ -64,8 +445,7 @@ def display_band(band):
     return str(band)
 
 
-def band_class(band):
-    """Return CSS class for a risk band."""
+def risk_class(band):
 
     value = str(band).lower()
 
@@ -78,111 +458,236 @@ def band_class(band):
     if "high" in value or "higher" in value:
         return "high"
 
-    return "unknown"
+    return "neutral"
 
 
-def get_value(item, *keys, default=None):
-    """
-    Read a value from either a dictionary or an object.
-    """
+def trend_label(trend):
 
-    if isinstance(item, dict):
+    value = str(trend).lower()
 
-        for key in keys:
+    if value == "increasing":
+        return "Increasing"
 
-            if key in item:
-                return item[key]
+    if value == "decreasing":
+        return "Decreasing"
 
-        return default
-
-    for key in keys:
-
-        if hasattr(item, key):
-            return getattr(item, key)
-
-    return default
+    return "Stable"
 
 
-# ================================================================
-# RISK HISTORY PAGE
-# ================================================================
+def trend_icon(trend):
+
+    value = str(trend).lower()
+
+    if value == "increasing":
+        return "↗"
+
+    if value == "decreasing":
+        return "↘"
+
+    return "→"
+
+
+# ============================================================
+# SIDEBAR
+# ============================================================
+
+def render_sidebar():
+
+    with st.sidebar:
+
+        st.markdown(
+            '<div class="brand-name">🛡️ OncoGuard AI</div>',
+            unsafe_allow_html=True,
+        )
+
+        st.markdown(
+            '<div class="brand-subtitle">Patient Portal</div>',
+            unsafe_allow_html=True,
+        )
+
+        st.markdown(
+            '<div class="side-heading">Navigation</div>',
+            unsafe_allow_html=True,
+        )
+
+        st.markdown(
+            '<div class="side-item">🏠 &nbsp; Dashboard</div>',
+            unsafe_allow_html=True,
+        )
+
+        st.markdown(
+            '<div class="side-item">👤 &nbsp; Health Profile</div>',
+            unsafe_allow_html=True,
+        )
+
+        st.markdown(
+            '<div class="side-item">🧪 &nbsp; Risk Assessment</div>',
+            unsafe_allow_html=True,
+        )
+
+        st.markdown(
+            '<div class="side-item side-active">📈 &nbsp; Risk Journey</div>',
+            unsafe_allow_html=True,
+        )
+
+        st.markdown(
+            '<div class="side-item">🧠 &nbsp; Risk Explanation</div>',
+            unsafe_allow_html=True,
+        )
+
+        st.markdown(
+            '<div class="side-item">💡 &nbsp; Recommendations</div>',
+            unsafe_allow_html=True,
+        )
+
+        st.markdown(
+            '<div class="side-item">🔬 &nbsp; What-If Simulation</div>',
+            unsafe_allow_html=True,
+        )
+
+        st.markdown(
+            '<div class="side-item">📄 &nbsp; Reports</div>',
+            unsafe_allow_html=True,
+        )
+
+        st.markdown(
+            '<div class="side-divider"></div>',
+            unsafe_allow_html=True,
+        )
+
+        st.markdown(
+            '<div class="side-heading">Account</div>',
+            unsafe_allow_html=True,
+        )
+
+        st.markdown(
+            '<div class="side-item">👤 &nbsp; My Account</div>',
+            unsafe_allow_html=True,
+        )
+
+        st.markdown(
+            '<div class="side-item">⚙️ &nbsp; Settings</div>',
+            unsafe_allow_html=True,
+        )
+
+        st.markdown(
+            '<div class="side-item">🚪 &nbsp; Logout</div>',
+            unsafe_allow_html=True,
+        )
+
+        st.markdown("---")
+
+        patient_id = st.number_input(
+            "Development Patient ID",
+            min_value=1,
+            value=1,
+            step=1,
+        )
+
+        return int(patient_id)
+
+
+# ============================================================
+# MAIN PAGE
+# ============================================================
 
 def render_risk_history(patient_id):
-    """
-    Render the patient's risk history.
-    """
-
-    st.title("📈 Risk Journey")
-
-    st.caption(
-        "Review how your model-predicted risk has changed across "
-        "previous assessments."
-    )
-
-    st.info(
-        "This page shows changes in model-predicted risk across "
-        "assessments. It does not represent cancer progression, "
-        "cancer stage, or a medical diagnosis."
-    )
 
     db = SessionLocal()
 
     try:
 
-        # ========================================================
-        # LOAD DATA
-        # ========================================================
+        # --------------------------------------------------------
+        # DATABASE
+        # --------------------------------------------------------
 
         history = get_risk_history(
             db,
-            patient_id
+            patient_id,
         )
 
         current = get_current_risk(
             db,
-            patient_id
+            patient_id,
         )
 
         summary = get_risk_history_summary(
             db,
-            patient_id
+            patient_id,
         )
 
         trend = get_risk_trend(
             db,
-            patient_id
+            patient_id,
         )
 
-        # ========================================================
-        # NO HISTORY
-        # ========================================================
+        # --------------------------------------------------------
+        # HEADER
+        # --------------------------------------------------------
+
+        st.markdown(
+            '<div class="page-kicker">ONCOGUARD AI</div>',
+            unsafe_allow_html=True,
+        )
+
+        st.markdown(
+            '<div class="page-title">Risk Journey</div>',
+            unsafe_allow_html=True,
+        )
+
+        st.markdown(
+            '<div class="page-subtitle">'
+            'Track how your model-predicted risk has changed '
+            'across previous assessments.'
+            '</div>',
+            unsafe_allow_html=True,
+        )
+
+        # --------------------------------------------------------
+        # SAFETY NOTICE
+        # --------------------------------------------------------
+
+        st.markdown(
+            '<div class="notice">'
+            '<strong>About your Risk Journey:</strong> '
+            'This page shows changes in model-predicted risk '
+            'across assessments. It does not represent cancer '
+            'progression, cancer stage, or a medical diagnosis.'
+            '</div>',
+            unsafe_allow_html=True,
+        )
+
+        # --------------------------------------------------------
+        # EMPTY STATE
+        # --------------------------------------------------------
 
         if not history:
 
-            st.warning(
-                "No risk assessments are available yet."
-            )
-
-            st.write(
-                "Complete a risk assessment to begin your "
-                "risk journey."
+            st.markdown(
+                '<div class="detail-card">'
+                '<div class="detail-label">Risk Journey</div>'
+                '<div class="detail-main">'
+                'No assessments yet'
+                '</div>'
+                '<div class="card-description">'
+                'Complete a risk assessment to begin tracking '
+                'model-predicted risk over time.'
+                '</div>'
+                '</div>',
+                unsafe_allow_html=True,
             )
 
             return
 
-        # ========================================================
-        # CURRENT RISK
-        # ========================================================
-
-        st.subheader(
-            "Current Model-Predicted Risk"
-        )
+        # --------------------------------------------------------
+        # CURRENT DATA
+        # --------------------------------------------------------
 
         current_probability = get_value(
             current,
             "probability",
             "risk_probability",
-            default=0.0,
+            default=0,
         )
 
         current_percentage = get_value(
@@ -192,10 +697,7 @@ def render_risk_history(patient_id):
         )
 
         if current_percentage is None:
-
-            current_percentage = (
-                float(current_probability) * 100
-            )
+            current_percentage = float(current_probability) * 100
 
         current_band = get_value(
             current,
@@ -203,113 +705,179 @@ def render_risk_history(patient_id):
             default="N/A",
         )
 
-        current_prediction = get_value(
-            current,
-            "prediction",
-            default=0,
-        )
-
-        css_class = band_class(
+        current_class = risk_class(
             current_band
         )
 
-        # ========================================================
-        # RISK CARD
-        # ========================================================
-        #
-        # IMPORTANT:
-        # Keep the HTML on a single line.
-        # This prevents Streamlit Markdown from treating
-        # the inner divs as a code block.
-        # ========================================================
+        # --------------------------------------------------------
+        # PREVIOUS
+        # --------------------------------------------------------
 
-        risk_card_html = (
-            f'<div class="risk-card {css_class}">'
-            f'<div class="risk-card-title">Current Model-Predicted Risk</div>'
-            f'<div class="risk-card-value">{float(current_percentage):.2f}%</div>'
-            f'<div class="risk-card-band">{display_band(current_band)}</div>'
-            f'</div>'
-        )
+        previous_percentage = None
+
+        if len(history) >= 2:
+
+            previous_percentage = risk_percentage(
+                history[-2]
+            )
+
+        if previous_percentage is None:
+
+            comparison = "First recorded assessment"
+
+        else:
+
+            change = (
+                float(current_percentage)
+                - previous_percentage
+            )
+
+            if change > 0:
+                comparison = (
+                    f"+{change:.2f} percentage points "
+                    "from previous"
+                )
+
+            elif change < 0:
+                comparison = (
+                    f"{change:.2f} percentage points "
+                    "from previous"
+                )
+
+            else:
+                comparison = (
+                    "No change from previous assessment"
+                )
+
+        # --------------------------------------------------------
+        # SECTION
+        # --------------------------------------------------------
 
         st.markdown(
-            risk_card_html,
+            '<div class="section-title">Current Overview</div>',
             unsafe_allow_html=True,
         )
 
-        # ========================================================
-        # SUMMARY METRICS
-        # ========================================================
-
-        col1, col2, col3 = st.columns(3)
-
-        assessment_count = get_value(
-            summary,
-            "assessment_count",
-            "assessments",
-            "count",
-            default=len(history),
+        st.markdown(
+            '<div class="section-caption">'
+            'Latest available assessment'
+            '</div>',
+            unsafe_allow_html=True,
         )
 
-        with col1:
+        # --------------------------------------------------------
+        # STAT CARDS
+        # --------------------------------------------------------
 
-            st.metric(
-                "Total Assessments",
-                assessment_count,
-            )
-
-        with col2:
-
-            st.metric(
-                "Prediction",
-                (
-                    "Positive"
-                    if current_prediction == 1
-                    else "Negative"
-                ),
-            )
-
-        with col3:
-
-            st.metric(
-                "Overall Trend",
-                str(trend).capitalize(),
-            )
-
-        # ========================================================
-        # RISK JOURNEY GRAPH
-        # ========================================================
-
-        st.divider()
-
-        st.subheader(
-            "Risk Journey"
+        c1, c2, c3 = st.columns(
+            3,
+            gap="medium",
         )
 
-        chart_rows = []
+        # Current risk
+        with c1:
 
-        for index, item in enumerate(
-            history,
-            start=1
-        ):
-
-            probability = get_value(
-                item,
-                "probability",
-                "risk_probability",
-                default=0.0,
+            st.markdown(
+                f'<div class="card">'
+                f'<div class="card-label">'
+                f'MODEL-PREDICTED RISK'
+                f'</div>'
+                f'<div class="card-value risk-{current_class}">'
+                f'{float(current_percentage):.2f}%'
+                f'</div>'
+                f'<span class="pill pill-{current_class}">'
+                f'{display_band(current_band)}'
+                f'</span>'
+                f'</div>',
+                unsafe_allow_html=True,
             )
 
-            risk_percentage = get_value(
-                item,
-                "risk_percentage",
+        # Trend
+        with c2:
+
+            clean_trend = trend_label(trend)
+
+            if str(trend).lower() == "increasing":
+                trend_css = "risk-high"
+
+            elif str(trend).lower() == "decreasing":
+                trend_css = "risk-low"
+
+            else:
+                trend_css = ""
+
+            st.markdown(
+                f'<div class="card">'
+                f'<div class="card-label">RISK TREND</div>'
+                f'<div class="card-value {trend_css}">'
+                f'{trend_icon(trend)} {clean_trend}'
+                f'</div>'
+                f'<div class="card-description">'
+                f'{comparison}'
+                f'</div>'
+                f'</div>',
+                unsafe_allow_html=True,
+            )
+
+        # Assessment count
+        with c3:
+
+            count = get_value(
+                summary,
+                "assessment_count",
+                "assessments",
+                "count",
+                default=len(history),
+            )
+
+            last_timestamp = get_value(
+                history[-1],
+                "timestamp",
+                "created_at",
+                "assessment_date",
                 default=None,
             )
 
-            if risk_percentage is None:
+            st.markdown(
+                f'<div class="card">'
+                f'<div class="card-label">'
+                f'ASSESSMENT ACTIVITY'
+                f'</div>'
+                f'<div class="card-value">'
+                f'{count}'
+                f'</div>'
+                f'<div class="card-description">'
+                f'Last assessed: '
+                f'{format_timestamp(last_timestamp)}'
+                f'</div>'
+                f'</div>',
+                unsafe_allow_html=True,
+            )
 
-                risk_percentage = (
-                    float(probability) * 100
-                )
+        # --------------------------------------------------------
+        # CHART
+        # --------------------------------------------------------
+
+        st.markdown(
+            '<div class="section-title">'
+            'Model-Predicted Risk Journey'
+            '</div>',
+            unsafe_allow_html=True,
+        )
+
+        st.markdown(
+            '<div class="section-caption">'
+            'Historical assessment trend'
+            '</div>',
+            unsafe_allow_html=True,
+        )
+
+        chart_data = []
+
+        for index, item in enumerate(
+            history,
+            start=1,
+        ):
 
             timestamp = get_value(
                 item,
@@ -319,152 +887,308 @@ def render_risk_history(patient_id):
                 default=None,
             )
 
-            risk_band = get_value(
+            band = get_value(
                 item,
                 "risk_band",
                 default="N/A",
             )
 
-            chart_rows.append(
+            chart_data.append(
                 {
                     "Assessment": index,
-
-                    "Risk Percentage":
-                        float(risk_percentage),
-
-                    "Risk Band":
-                        display_band(risk_band),
-
-                    "Date":
-                        format_timestamp(timestamp),
+                    "Risk": risk_percentage(item),
+                    "Date": format_timestamp(timestamp),
+                    "Band": display_band(band),
                 }
             )
 
         chart_df = pd.DataFrame(
-            chart_rows
+            chart_data
         )
 
         if len(chart_df) >= 2:
 
-            fig = px.line(
-                chart_df,
-                x="Assessment",
-                y="Risk Percentage",
-                markers=True,
+            fig = go.Figure()
 
-                hover_data=[
-                    "Date",
-                    "Risk Band",
-                ],
-
-                labels={
-                    "Assessment":
-                        "Assessment",
-
-                    "Risk Percentage":
-                        "Model-Predicted Risk (%)",
-                },
-
-                title=
-                    "Model-Predicted Risk Over Time",
-            )
-
-            fig.update_yaxes(
-                range=[
-                    0,
-                    max(
-                        100,
-                        float(
-                            chart_df[
-                                "Risk Percentage"
-                            ].max()
-                        ) + 5,
+            fig.add_trace(
+                go.Scatter(
+                    x=chart_df["Assessment"],
+                    y=chart_df["Risk"],
+                    mode="lines+markers",
+                    customdata=chart_df[
+                        ["Date", "Band"]
+                    ].values,
+                    hovertemplate=(
+                        "<b>Assessment %{x}</b>"
+                        "<br>Risk: %{y:.2f}%"
+                        "<br>Date: %{customdata[0]}"
+                        "<br>Status: %{customdata[1]}"
+                        "<extra></extra>"
                     ),
-                ]
+                    line=dict(
+                        width=3,
+                        color="#6366f1",
+                    ),
+                    marker=dict(
+                        size=9,
+                        color="#6366f1",
+                    ),
+                )
             )
 
             fig.update_layout(
-                height=450,
-                hovermode="x unified",
+                height=390,
+                margin=dict(
+                    l=20,
+                    r=20,
+                    t=25,
+                    b=20,
+                ),
+                paper_bgcolor="#ffffff",
+                plot_bgcolor="#ffffff",
+                showlegend=False,
+                xaxis=dict(
+                    title="Assessment",
+                    dtick=1,
+                    showgrid=False,
+                    zeroline=False,
+                ),
+                yaxis=dict(
+                    title="Model-Predicted Risk (%)",
+                    showgrid=True,
+                    gridcolor="#edf0f5",
+                    zeroline=False,
+                    rangemode="tozero",
+                ),
             )
 
             st.plotly_chart(
                 fig,
                 use_container_width=True,
+                config={
+                    "displayModeBar": False,
+                },
             )
 
         else:
 
-            st.info(
-                "A risk journey chart will appear "
-                "after additional assessments are recorded."
+            st.markdown(
+                '<div class="detail-card">'
+                '<div class="detail-label">'
+                'Risk Journey'
+                '</div>'
+                '<div class="detail-main">'
+                'One assessment recorded'
+                '</div>'
+                '<div class="card-description">'
+                'The trend chart will become available '
+                'after another assessment.'
+                '</div>'
+                '</div>',
+                unsafe_allow_html=True,
             )
 
-        # ========================================================
+        # --------------------------------------------------------
         # TREND MESSAGE
-        # ========================================================
+        # --------------------------------------------------------
 
-        trend_value = str(
-            trend
-        ).lower()
+        if str(trend).lower() == "increasing":
 
-        if trend_value == "increasing":
-
-            st.warning(
+            trend_message = (
                 "The model-predicted risk has increased "
                 "across the available assessments."
             )
 
-        elif trend_value == "decreasing":
+            trend_style = "trend-increasing"
 
-            st.success(
+        elif str(trend).lower() == "decreasing":
+
+            trend_message = (
                 "The model-predicted risk has decreased "
                 "across the available assessments."
             )
 
+            trend_style = "trend-decreasing"
+
         else:
 
-            st.info(
+            trend_message = (
                 "The model-predicted risk has remained "
                 "relatively stable across the available "
                 "assessments."
             )
 
-        # ========================================================
-        # HISTORY TABLE
-        # ========================================================
+            trend_style = "trend-stable"
 
-        st.divider()
-
-        st.subheader(
-            "Assessment History"
+        st.markdown(
+            f'<div class="trend-box {trend_style}">'
+            f'<strong>{trend_icon(trend)} '
+            f'{trend_label(trend)}:</strong> '
+            f'{trend_message}'
+            f'</div>',
+            unsafe_allow_html=True,
         )
 
-        table_rows = []
+        # --------------------------------------------------------
+        # JOURNEY SUMMARY
+        # --------------------------------------------------------
 
-        for index, item in enumerate(
-            history,
-            start=1
-        ):
+        st.markdown(
+            '<div class="section-title">'
+            'Journey Summary'
+            '</div>',
+            unsafe_allow_html=True,
+        )
 
-            probability = get_value(
-                item,
-                "probability",
-                "risk_probability",
-                default=0.0,
-            )
+        st.markdown(
+            '<div class="section-caption">'
+            'Latest assessment details'
+            '</div>',
+            unsafe_allow_html=True,
+        )
 
-            risk_percentage = get_value(
-                item,
-                "risk_percentage",
+        d1, d2 = st.columns(
+            2,
+            gap="medium",
+        )
+
+        # --------------------------------------------------------
+        # LATEST ASSESSMENT
+        # --------------------------------------------------------
+
+        with d1:
+
+            latest = history[-1]
+
+            latest_timestamp = get_value(
+                latest,
+                "timestamp",
+                "created_at",
+                "assessment_date",
                 default=None,
             )
 
-            if risk_percentage is None:
+            latest_model = get_value(
+                latest,
+                "model_version",
+                default="N/A",
+            )
 
-                risk_percentage = (
-                    float(probability) * 100
+            threshold = get_value(
+                latest,
+                "threshold",
+                "decision_threshold",
+                default=None,
+            )
+
+            if threshold is None:
+                threshold_text = "N/A"
+            else:
+                threshold_text = f"{float(threshold):.2f}"
+
+            st.markdown(
+                f'<div class="detail-card">'
+                f'<div class="detail-label">'
+                f'Latest Assessment'
+                f'</div>'
+                f'<div class="detail-main">'
+                f'{risk_percentage(latest):.2f}%'
+                f'</div>'
+                f'<div class="detail-row">'
+                f'<span>Date</span>'
+                f'<strong>'
+                f'{format_timestamp(latest_timestamp)}'
+                f'</strong>'
+                f'</div>'
+                f'<div class="detail-row">'
+                f'<span>Model</span>'
+                f'<strong>{latest_model}</strong>'
+                f'</div>'
+                f'<div class="detail-row">'
+                f'<span>Decision threshold</span>'
+                f'<strong>{threshold_text}</strong>'
+                f'</div>'
+                f'</div>',
+                unsafe_allow_html=True,
+            )
+
+        # --------------------------------------------------------
+        # SUMMARY
+        # --------------------------------------------------------
+
+        with d2:
+
+            percentages = [
+                risk_percentage(item)
+                for item in history
+            ]
+
+            highest = max(percentages)
+            lowest = min(percentages)
+
+            total_change = (
+                percentages[-1]
+                - percentages[0]
+            )
+
+            if total_change > 0:
+                total_change_text = (
+                    f"+{total_change:.2f} pp"
                 )
+            else:
+                total_change_text = (
+                    f"{total_change:.2f} pp"
+                )
+
+            st.markdown(
+                f'<div class="detail-card">'
+                f'<div class="detail-label">'
+                f'Risk Journey Summary'
+                f'</div>'
+                f'<div class="detail-row">'
+                f'<span>Highest recorded risk</span>'
+                f'<strong>{highest:.2f}%</strong>'
+                f'</div>'
+                f'<div class="detail-row">'
+                f'<span>Lowest recorded risk</span>'
+                f'<strong>{lowest:.2f}%</strong>'
+                f'</div>'
+                f'<div class="detail-row">'
+                f'<span>Change since first assessment</span>'
+                f'<strong>{total_change_text}</strong>'
+                f'</div>'
+                f'<div class="detail-row">'
+                f'<span>Total assessments</span>'
+                f'<strong>{count}</strong>'
+                f'</div>'
+                f'</div>',
+                unsafe_allow_html=True,
+            )
+
+        # --------------------------------------------------------
+        # HISTORY TABLE
+        # --------------------------------------------------------
+
+        st.markdown(
+            '<div class="section-title">'
+            'Assessment History'
+            '</div>',
+            unsafe_allow_html=True,
+        )
+
+        st.markdown(
+            '<div class="section-caption">'
+            'Each row represents a separate model assessment.'
+            '</div>',
+            unsafe_allow_html=True,
+        )
+
+        rows = []
+
+        for index, item in enumerate(
+            history,
+            start=1,
+        ):
 
             timestamp = get_value(
                 item,
@@ -474,7 +1198,7 @@ def render_risk_history(patient_id):
                 default=None,
             )
 
-            risk_band = get_value(
+            band = get_value(
                 item,
                 "risk_band",
                 default="N/A",
@@ -487,160 +1211,70 @@ def render_risk_history(patient_id):
                 default=None,
             )
 
-            if change is None:
-
-                change_display = "—"
-
-            else:
-
-                change_display = (
-                    f"{float(change):+.2f} pp"
-                )
-
             prediction = get_value(
                 item,
                 "prediction",
                 default=0,
             )
 
-            model_version = get_value(
+            model = get_value(
                 item,
                 "model_version",
                 default="N/A",
             )
 
-            table_rows.append(
+            rows.append(
                 {
-                    "Assessment":
-                        index,
-
-                    "Date":
-                        format_timestamp(timestamp),
-
-                    "Risk":
-                        f"{float(risk_percentage):.2f}%",
-
-                    "Risk Band":
-                        display_band(risk_band),
-
-                    "Change":
-                        change_display,
-
-                    "Prediction":
-                        (
-                            "Positive"
-                            if prediction == 1
-                            else "Negative"
-                        ),
-
-                    "Model Version":
-                        model_version,
+                    "Assessment": index,
+                    "Date": format_timestamp(timestamp),
+                    "Risk": f"{risk_percentage(item):.2f}%",
+                    "Risk Band": display_band(band),
+                    "Change": (
+                        f"{float(change):+.2f} pp"
+                        if change is not None
+                        else "—"
+                    ),
+                    "Prediction": (
+                        "Positive"
+                        if prediction == 1
+                        else "Negative"
+                    ),
+                    "Model": model,
                 }
             )
 
-        history_df = pd.DataFrame(
-            table_rows
-        )
+        table_df = pd.DataFrame(rows)
 
         st.dataframe(
-            history_df,
+            table_df,
             use_container_width=True,
             hide_index=True,
+            height=min(
+                450,
+                90 + len(table_df) * 38,
+            ),
         )
 
-        # ========================================================
-        # LATEST ASSESSMENT DETAILS
-        # ========================================================
-
-        st.divider()
-
-        st.subheader(
-            "Latest Assessment Details"
-        )
-
-        latest = history[-1]
-
-        latest_timestamp = get_value(
-            latest,
-            "timestamp",
-            "created_at",
-            "assessment_date",
-            default=None,
-        )
-
-        latest_model = get_value(
-            latest,
-            "model_version",
-            default="N/A",
-        )
-
-        latest_threshold = get_value(
-            latest,
-            "threshold",
-            "decision_threshold",
-            default=None,
-        )
-
-        detail_col1, detail_col2, detail_col3 = (
-            st.columns(3)
-        )
-
-        with detail_col1:
-
-            st.write(
-                "**Assessment Date**"
-            )
-
-            st.write(
-                format_timestamp(
-                    latest_timestamp
-                )
-            )
-
-        with detail_col2:
-
-            st.write(
-                "**Model Version**"
-            )
-
-            st.write(
-                latest_model
-            )
-
-        with detail_col3:
-
-            st.write(
-                "**Decision Threshold**"
-            )
-
-            if latest_threshold is not None:
-
-                st.write(
-                    f"{float(latest_threshold):.2f}"
-                )
-
-            else:
-
-                st.write("N/A")
-
-        # ========================================================
+        # --------------------------------------------------------
         # DISCLAIMER
-        # ========================================================
+        # --------------------------------------------------------
 
-        st.divider()
-
-        st.caption(
-            "⚕️ OncoGuard AI provides model-predicted risk "
-            "estimates for research and decision-support "
-            "purposes. These estimates are not a diagnosis "
-            "and should not replace evaluation by a qualified "
-            "healthcare professional."
+        st.markdown(
+            '<div class="disclaimer">'
+            '<strong>⚕️ Important:</strong> '
+            'OncoGuard AI provides model-predicted risk '
+            'estimates for research and decision-support '
+            'purposes. These estimates are not a diagnosis '
+            'and should not replace evaluation by a qualified '
+            'healthcare professional.'
+            '</div>',
+            unsafe_allow_html=True,
         )
 
     except Exception as exc:
 
         st.error(
-            "Unable to load the risk history."
+            "Unable to load the Risk Journey."
         )
 
         st.exception(exc)
@@ -650,98 +1284,14 @@ def render_risk_history(patient_id):
         db.close()
 
 
-# ================================================================
-# STANDALONE DEVELOPMENT TEST
-# ================================================================
+# ============================================================
+# RUN
+# ============================================================
 
 if __name__ == "__main__":
 
-    st.set_page_config(
-        page_title=
-            "Risk Journey - OncoGuard AI",
-
-        page_icon="📈",
-
-        layout="wide",
-    )
-
-    # ============================================================
-    # CUSTOM CSS
-    # ============================================================
-
-    st.markdown(
-        """
-<style>
-
-.risk-card {
-    padding: 28px;
-    border-radius: 16px;
-    border: 1px solid rgba(128, 128, 128, 0.25);
-    margin: 10px 0 25px 0;
-    box-sizing: border-box;
-}
-
-.risk-card-title {
-    font-size: 18px;
-    font-weight: 600;
-    margin-bottom: 8px;
-    color: #222222 !important;
-}
-
-.risk-card-value {
-    font-size: 46px;
-    font-weight: 700;
-    line-height: 1.1;
-    color: #222222 !important;
-}
-
-.risk-card-band {
-    font-size: 19px;
-    font-weight: 600;
-    margin-top: 8px;
-    color: #222222 !important;
-}
-
-.risk-card.low {
-    background-color: #eef8ee;
-}
-
-.risk-card.medium {
-    background-color: #fff8e6;
-}
-
-.risk-card.high {
-    background-color: #fdecec;
-}
-
-.risk-card.unknown {
-    background-color: #eeeeee;
-}
-
-</style>
-""",
-        unsafe_allow_html=True,
-    )
-
-    # ============================================================
-    # DEVELOPMENT SIDEBAR
-    # ============================================================
-
-    st.sidebar.header(
-        "Development Test"
-    )
-
-    patient_id = st.sidebar.number_input(
-        "Patient ID",
-        min_value=1,
-        value=1,
-        step=1,
-    )
-
-    # ============================================================
-    # RENDER
-    # ============================================================
+    patient_id = render_sidebar()
 
     render_risk_history(
-        int(patient_id)
+        patient_id
     )

@@ -41,7 +41,10 @@ def create_user(
     return user
 
 
-def get_user_by_username(db: Session, username: str):
+def get_user_by_username(
+    db: Session,
+    username: str,
+):
     return (
         db.query(User)
         .filter(User.username == username)
@@ -49,7 +52,10 @@ def get_user_by_username(db: Session, username: str):
     )
 
 
-def get_user_by_email(db: Session, email: str):
+def get_user_by_email(
+    db: Session,
+    email: str,
+):
     return (
         db.query(User)
         .filter(User.email == email)
@@ -57,7 +63,10 @@ def get_user_by_email(db: Session, email: str):
     )
 
 
-def get_user_by_id(db: Session, user_id: int):
+def get_user_by_id(
+    db: Session,
+    user_id: int,
+):
     return (
         db.query(User)
         .filter(User.id == user_id)
@@ -102,7 +111,10 @@ def create_patient_profile(
     return profile
 
 
-def get_patient_profile(db: Session, user_id: int):
+def get_patient_profile(
+    db: Session,
+    user_id: int,
+):
     return (
         db.query(PatientProfile)
         .filter(PatientProfile.user_id == user_id)
@@ -110,7 +122,10 @@ def get_patient_profile(db: Session, user_id: int):
     )
 
 
-def get_patient_profile_by_id(db: Session, profile_id: int):
+def get_patient_profile_by_id(
+    db: Session,
+    profile_id: int,
+):
     return (
         db.query(PatientProfile)
         .filter(PatientProfile.id == profile_id)
@@ -118,7 +133,54 @@ def get_patient_profile_by_id(db: Session, profile_id: int):
     )
 
 
-def get_patients_for_doctor(db: Session, doctor_id: int):
+def update_patient_profile(
+    db: Session,
+    user_id: int,
+    age: int,
+    gender: int,
+    bmi: float,
+    smoking: int,
+    genetic_risk: int,
+    physical_activity: float,
+    alcohol_intake: float,
+    cancer_history: int,
+):
+    """
+    Update an existing patient health profile.
+
+    Returns:
+        Updated PatientProfile object if found.
+        None if no profile exists for the given user_id.
+    """
+
+    profile = (
+        db.query(PatientProfile)
+        .filter(PatientProfile.user_id == user_id)
+        .first()
+    )
+
+    if not profile:
+        return None
+
+    profile.age = age
+    profile.gender = gender
+    profile.bmi = bmi
+    profile.smoking = smoking
+    profile.genetic_risk = genetic_risk
+    profile.physical_activity = physical_activity
+    profile.alcohol_intake = alcohol_intake
+    profile.cancer_history = cancer_history
+
+    db.commit()
+    db.refresh(profile)
+
+    return profile
+
+
+def get_patients_for_doctor(
+    db: Session,
+    doctor_id: int,
+):
     return (
         db.query(PatientProfile)
         .filter(PatientProfile.doctor_id == doctor_id)
@@ -155,7 +217,10 @@ def create_model_version(
     return model
 
 
-def get_model_version(db: Session, version: str):
+def get_model_version(
+    db: Session,
+    version: str,
+):
     return (
         db.query(ModelVersion)
         .filter(ModelVersion.version == version)
@@ -163,7 +228,9 @@ def get_model_version(db: Session, version: str):
     )
 
 
-def get_active_model(db: Session):
+def get_active_model(
+    db: Session,
+):
     return (
         db.query(ModelVersion)
         .filter(ModelVersion.active == True)

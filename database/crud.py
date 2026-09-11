@@ -1,6 +1,6 @@
 from typing import Optional
 
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from database.models import (
     User,
@@ -253,6 +253,14 @@ def create_risk_assessment(
     risk_band: str,
     input_snapshot: Optional[dict] = None,
 ):
+    """
+    Create and return a risk assessment.
+
+    model_version is eagerly loaded before returning so that
+    Streamlit can safely access assessment.model_version even
+    after the database session is closed.
+    """
+
     assessment = RiskAssessment(
         patient_id=patient_id,
         model_version_id=model_version_id,
@@ -265,7 +273,16 @@ def create_risk_assessment(
 
     db.add(assessment)
     db.commit()
-    db.refresh(assessment)
+
+    # Re-query with model_version eagerly loaded.
+    assessment = (
+        db.query(RiskAssessment)
+        .options(
+            joinedload(RiskAssessment.model_version)
+        )
+        .filter(RiskAssessment.id == assessment.id)
+        .first()
+    )
 
     return assessment
 
@@ -274,8 +291,18 @@ def get_patient_assessments(
     db: Session,
     patient_id: int,
 ):
+    """
+    Return all patient assessments with model_version already loaded.
+
+    This prevents SQLAlchemy DetachedInstanceError when the UI
+    accesses assessment.model_version after the session closes.
+    """
+
     return (
         db.query(RiskAssessment)
+        .options(
+            joinedload(RiskAssessment.model_version)
+        )
         .filter(
             RiskAssessment.patient_id == patient_id
         )
@@ -290,8 +317,16 @@ def get_latest_assessment(
     db: Session,
     patient_id: int,
 ):
+    """
+    Return the latest patient assessment with model_version
+    eagerly loaded.
+    """
+
     return (
         db.query(RiskAssessment)
+        .options(
+            joinedload(RiskAssessment.model_version)
+        )
         .filter(
             RiskAssessment.patient_id == patient_id
         )
